@@ -1,0 +1,16 @@
+services:
+  tcsa_postgres:
+    image: postgres:17
+    container_name: tcsa_postgres
+    environment:
+      POSTGRES_DB: tcsa
+      POSTGRES_USER: tcsa
+      POSTGRES_PASSWORD: pa55word
+    ports:
+      - "5433:5432"
+    volumes:
+      - tcsa_postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  tcsa_postgres_data:
