@@ -40,7 +40,6 @@ func (app *application) createTransactionHandler(ctx echo.Context) error {
 }
 
 func (app *application) getByIdTransactionHandler(ctx echo.Context) error {
-	fmt.Println("AAAAAAA")
 	transactionId, err := app.getParamId(ctx)
 	if err != nil {
 		return app.ErrBadRequest(err.Error())
@@ -57,4 +56,30 @@ func (app *application) getByIdTransactionHandler(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, envelope{"transaction": transaction})
+}
+
+func (app *application) removeByIdTransactionHandler(ctx echo.Context) error {
+	transactionId, err := app.getParamId(ctx)
+	if err != nil {
+		return app.ErrBadRequest(err.Error())
+	}
+
+	transaction, err := app.models.Transactions.GetById(transactionId)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			return app.ErrNotFound()
+		default:
+			return app.ErrInternalServer(err, "failed to get transaction by id", ctx.Request())
+		}
+	}
+
+	err = app.models.Transactions.DeleteOne(transaction.ID)
+	if err != nil {
+		return app.ErrInternalServer(err, "failed to delete transaction", ctx.Request())
+	}
+
+	return ctx.JSON(http.StatusOK, envelope{
+		"message": fmt.Sprintf("transaction record with id %v succesfully dedelte", transaction.ID),
+	})
 }

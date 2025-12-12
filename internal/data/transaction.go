@@ -175,7 +175,7 @@ func (m TransactionModel) Update(transaction *Transaction) error {
 	return nil
 }
 
-func (m TransactionModel) Delete(id int) error {
+func (m TransactionModel) DeleteOne(id int) error {
 	if id < 1 {
 		return ErrRecordNotFound
 	}

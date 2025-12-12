@@ -24,6 +24,8 @@ func (app *application) routes() http.Handler {
 	{
 		transactions.POST("", app.createTransactionHandler)
 		transactions.GET("/:id", app.getByIdTransactionHandler)
+		transactions.DELETE("/:id", app.removeByIdTransactionHandler)
+
 	}
 
 	return ec
