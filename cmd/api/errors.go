@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/ucok-man/tcsa/internal/tlog"
@@ -32,7 +33,20 @@ func (app *application) HTTPErrorHandler(err error, ctx echo.Context) {
 		case http.StatusMethodNotAllowed:
 			response.Message = fmt.Sprintf("the %s method is not supported for this resource", ctx.Request().Method)
 		default:
-			response.Message = fmt.Sprintf("%v", he.Message)
+			msg, ok := he.Message.(string)
+			if !ok {
+				msg = fmt.Sprintf("%v", he.Message)
+			}
+
+			// Extract just the actual error message if it's in Echo's format
+			if idx := strings.Index(msg, "message="); idx != -1 {
+				msg = msg[idx+8:] // Skip "message="
+				// Remove internal error suffix if present
+				if commaIdx := strings.Index(msg, ", internal="); commaIdx != -1 {
+					msg = msg[:commaIdx]
+				}
+			}
+			response.Message = msg
 		}
 
 		err = ctx.JSON(he.Code, envelope{"error": response})
