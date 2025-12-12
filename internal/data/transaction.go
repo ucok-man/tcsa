@@ -149,7 +149,7 @@ func (m TransactionModel) Update(transaction *Transaction) error {
 	query := `
         UPDATE transactions
         SET amount = $1, status = $2, updated_at=$3, version = version + 1
-        WHERE id = $3 AND version = $4
+        WHERE id = $4 AND version = $5
         RETURNING version`
 
 	args := []any{
