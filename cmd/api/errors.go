@@ -23,7 +23,7 @@ func (app *application) HTTPErrorHandler(err error, ctx echo.Context) {
 		response.Code = http.StatusText(he.Code)
 		switch he.Code {
 		case http.StatusUnprocessableEntity:
-			response.Message = "unable proccess request because some malformed input"
+			response.Message = "unable to proccess request because some malformed input"
 			response.Details = he.Message
 
 		// Change default notfound and method not allowed.
