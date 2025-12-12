@@ -1,6 +1,8 @@
 package main
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -35,4 +37,24 @@ func (app *application) createTransactionHandler(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusCreated, envelope{"transaction": transaction})
+}
+
+func (app *application) getByIdTransactionHandler(ctx echo.Context) error {
+	fmt.Println("AAAAAAA")
+	transactionId, err := app.getParamId(ctx)
+	if err != nil {
+		return app.ErrBadRequest(err.Error())
+	}
+
+	transaction, err := app.models.Transactions.GetById(transactionId)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			return app.ErrNotFound()
+		default:
+			return app.ErrInternalServer(err, "failed to get transaction by id", ctx.Request())
+		}
+	}
+
+	return ctx.JSON(http.StatusOK, envelope{"transaction": transaction})
 }

@@ -108,7 +108,7 @@ func (m TransactionModel) GetAll(dto dto.TransactionGetAllDTO) ([]*Transaction, 
 	return transactions, metadata, nil
 }
 
-func (m TransactionModel) Get(id int) (*Transaction, error) {
+func (m TransactionModel) GetById(id int) (*Transaction, error) {
 	if id < 1 {
 		return nil, ErrRecordNotFound
 	}

@@ -23,6 +23,7 @@ func (app *application) routes() http.Handler {
 	transactions := ec.Group("/transactions")
 	{
 		transactions.POST("", app.createTransactionHandler)
+		transactions.GET("/:id", app.getByIdTransactionHandler)
 	}
 
 	return ec
