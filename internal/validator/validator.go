@@ -64,3 +64,8 @@ func (v *Validator) Struct(input any) error {
 	}
 	return nil
 }
+
+// Implement validator interface from echo
+func (v *Validator) Validate(i any) error {
+	return v.Struct(i)
+}
