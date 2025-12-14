@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"log"
 	"sync"
 	"time"
 
@@ -23,6 +24,7 @@ type application struct {
 func main() {
 	cfg, err := NewConfig()
 	if err != nil {
+		log.Fatal(err)
 	}
 
 	logger := tlog.Must(tlog.NewProduction())

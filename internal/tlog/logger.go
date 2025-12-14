@@ -124,7 +124,7 @@ func (l *Logger) Printf(format string, args ...interface{}) {
 
 func (l *Logger) Printj(j log.JSON) {
 	if l.shouldLog(log.INFO) {
-		l.logJSON(j, l.withPrefix().Infow)
+		l.logJSON(j, l.WithSkipCaller(1).withPrefix().Infow)
 	}
 }
 
@@ -142,7 +142,7 @@ func (l *Logger) Debugf(format string, args ...interface{}) {
 
 func (l *Logger) Debugj(j log.JSON) {
 	if l.shouldLog(log.DEBUG) {
-		l.logJSON(j, l.withPrefix().Debugw)
+		l.logJSON(j, l.WithSkipCaller(1).withPrefix().Debugw)
 	}
 }
 
@@ -160,7 +160,7 @@ func (l *Logger) Infof(format string, args ...interface{}) {
 
 func (l *Logger) Infoj(j log.JSON) {
 	if l.shouldLog(log.INFO) {
-		l.logJSON(j, l.withPrefix().Infow)
+		l.logJSON(j, l.WithSkipCaller(1).withPrefix().Infow)
 	}
 }
 
@@ -178,7 +178,7 @@ func (l *Logger) Warnf(format string, args ...interface{}) {
 
 func (l *Logger) Warnj(j log.JSON) {
 	if l.shouldLog(log.WARN) {
-		l.logJSON(j, l.withPrefix().Warnw)
+		l.logJSON(j, l.WithSkipCaller(1).withPrefix().Warnw)
 	}
 }
 
@@ -196,7 +196,7 @@ func (l *Logger) Errorf(format string, args ...interface{}) {
 
 func (l *Logger) Errorj(j log.JSON) {
 	if l.shouldLog(log.ERROR) {
-		l.logJSON(j, l.withPrefix().Errorw)
+		l.logJSON(j, l.WithSkipCaller(1).withPrefix().Errorw)
 	}
 }
 
@@ -209,7 +209,7 @@ func (l *Logger) Fatalf(format string, args ...interface{}) {
 }
 
 func (l *Logger) Fatalj(j log.JSON) {
-	l.logJSON(j, l.withPrefix().Fatalw)
+	l.logJSON(j, l.WithSkipCaller(1).withPrefix().Fatalw)
 }
 
 func (l *Logger) Panic(i ...interface{}) {
@@ -221,7 +221,7 @@ func (l *Logger) Panicf(format string, args ...interface{}) {
 }
 
 func (l *Logger) Panicj(j log.JSON) {
-	l.logJSON(j, l.withPrefix().Panicw)
+	l.logJSON(j, l.WithSkipCaller(1).withPrefix().Panicw)
 }
 
 func (l *Logger) Sync() {
