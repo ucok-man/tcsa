@@ -7,6 +7,7 @@ import (
 
 	"github.com/labstack/gommon/log"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type JSON = log.JSON
@@ -64,6 +65,12 @@ func (l *Logger) SetOutput(w io.Writer) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	l.output = w
+
+	encoder := zapcore.NewJSONEncoder(zap.NewProductionEncoderConfig())
+	writeSyncer := zapcore.AddSync(w)
+	core := zapcore.NewCore(encoder, writeSyncer, zapcore.DebugLevel)
+	l.logger = zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))
+	l.sugar = l.logger.Sugar()
 }
 
 func (l *Logger) Prefix() string {
@@ -98,9 +105,133 @@ func (l *Logger) WithSkipCaller(skip int) *Logger {
 		logger: logger,
 		sugar:  logger.Sugar(),
 		level:  log.INFO,
-		output: os.Stdout,
+		output: l.output,
 	}
 
+}
+
+func (l *Logger) Print(i ...any) {
+	if l.shouldLog(log.INFO) {
+		l.withPrefix().Info(i)
+	}
+}
+
+func (l *Logger) Printf(format string, args ...interface{}) {
+	if l.shouldLog(log.INFO) {
+		l.withPrefix().Infof(format, args...)
+	}
+}
+
+func (l *Logger) Printj(j log.JSON) {
+	if l.shouldLog(log.INFO) {
+		l.logJSON(j, l.withPrefix().Infow)
+	}
+}
+
+func (l *Logger) Debug(i ...interface{}) {
+	if l.shouldLog(log.DEBUG) {
+		l.withPrefix().Debug(i...)
+	}
+}
+
+func (l *Logger) Debugf(format string, args ...interface{}) {
+	if l.shouldLog(log.DEBUG) {
+		l.withPrefix().Debugf(format, args...)
+	}
+}
+
+func (l *Logger) Debugj(j log.JSON) {
+	if l.shouldLog(log.DEBUG) {
+		l.logJSON(j, l.withPrefix().Debugw)
+	}
+}
+
+func (l *Logger) Info(i ...interface{}) {
+	if l.shouldLog(log.INFO) {
+		l.withPrefix().Info(i...)
+	}
+}
+
+func (l *Logger) Infof(format string, args ...interface{}) {
+	if l.shouldLog(log.INFO) {
+		l.withPrefix().Infof(format, args...)
+	}
+}
+
+func (l *Logger) Infoj(j log.JSON) {
+	if l.shouldLog(log.INFO) {
+		l.logJSON(j, l.withPrefix().Infow)
+	}
+}
+
+func (l *Logger) Warn(i ...interface{}) {
+	if l.shouldLog(log.WARN) {
+		l.withPrefix().Warn(i...)
+	}
+}
+
+func (l *Logger) Warnf(format string, args ...interface{}) {
+	if l.shouldLog(log.WARN) {
+		l.withPrefix().Warnf(format, args...)
+	}
+}
+
+func (l *Logger) Warnj(j log.JSON) {
+	if l.shouldLog(log.WARN) {
+		l.logJSON(j, l.withPrefix().Warnw)
+	}
+}
+
+func (l *Logger) Error(i ...interface{}) {
+	if l.shouldLog(log.ERROR) {
+		l.withPrefix().Error(i...)
+	}
+}
+
+func (l *Logger) Errorf(format string, args ...interface{}) {
+	if l.shouldLog(log.ERROR) {
+		l.withPrefix().Errorf(format, args...)
+	}
+}
+
+func (l *Logger) Errorj(j log.JSON) {
+	if l.shouldLog(log.ERROR) {
+		l.logJSON(j, l.withPrefix().Errorw)
+	}
+}
+
+func (l *Logger) Fatal(i ...interface{}) {
+	l.withPrefix().Fatal(i...)
+}
+
+func (l *Logger) Fatalf(format string, args ...interface{}) {
+	l.withPrefix().Fatalf(format, args...)
+}
+
+func (l *Logger) Fatalj(j log.JSON) {
+	l.logJSON(j, l.withPrefix().Fatalw)
+}
+
+func (l *Logger) Panic(i ...interface{}) {
+	l.withPrefix().Panic(i...)
+}
+
+func (l *Logger) Panicf(format string, args ...interface{}) {
+	l.withPrefix().Panicf(format, args...)
+}
+
+func (l *Logger) Panicj(j log.JSON) {
+	l.logJSON(j, l.withPrefix().Panicw)
+}
+
+func (l *Logger) Sync() {
+	l.logger.Sync()
+	l.sugar.Sync()
+}
+
+func (l *Logger) Write(p []byte) (n int, err error) {
+	l.withPrefix().Error(string(p))
+	return len(p), nil
 }
 
 // shouldLog checks if the message should be logged based on level
@@ -110,6 +241,7 @@ func (l *Logger) shouldLog(lvl log.Lvl) bool {
 	return lvl >= l.level
 }
 
+// withPrefix add prefix field to logger
 func (l *Logger) withPrefix() *SugaredLogger {
 	l.mu.RLock()
 	prefix := l.prefix
@@ -130,204 +262,19 @@ func (l *Logger) jsonToFields(j log.JSON) []any {
 	return fields
 }
 
-func (l *Logger) Print(i ...any) {
-	if l.shouldLog(log.INFO) {
-		l.withPrefix().Info(i)
-	}
-}
-
-func (l *Logger) Printf(format string, args ...interface{}) {
-	if l.shouldLog(log.INFO) {
-		l.withPrefix().Infof(format, args...)
-	}
-}
-
-func (l *Logger) Printj(j log.JSON) {
-	if l.shouldLog(log.INFO) {
-		msg, found := j["message"]
-		if !found {
-			l.withPrefix().Infow("", l.jsonToFields(j)...)
-		}
-
-		switch m := msg.(type) {
-		case string:
-			delete(j, "message")
-			l.withPrefix().Infow(m, l.jsonToFields(j)...)
-		default:
-			l.withPrefix().Infow("", l.jsonToFields(j)...)
-		}
-
-	}
-}
-
-func (l *Logger) Debug(i ...interface{}) {
-	if l.shouldLog(log.DEBUG) {
-		l.withPrefix().Debug(i...)
-	}
-}
-
-func (l *Logger) Debugf(format string, args ...interface{}) {
-	if l.shouldLog(log.DEBUG) {
-		l.withPrefix().Debugf(format, args...)
-	}
-}
-
-func (l *Logger) Debugj(j log.JSON) {
-	if l.shouldLog(log.DEBUG) {
-		msg, found := j["message"]
-		if !found {
-			l.withPrefix().Debugw("", l.jsonToFields(j)...)
-		}
-
-		switch m := msg.(type) {
-		case string:
-			delete(j, "message")
-			l.withPrefix().Debugw(m, l.jsonToFields(j)...)
-		default:
-			l.withPrefix().Debugw("", l.jsonToFields(j)...)
-		}
-	}
-}
-
-func (l *Logger) Info(i ...interface{}) {
-	if l.shouldLog(log.INFO) {
-		l.withPrefix().Info(i...)
-	}
-}
-
-func (l *Logger) Infof(format string, args ...interface{}) {
-	if l.shouldLog(log.INFO) {
-		l.withPrefix().Infof(format, args...)
-	}
-}
-
-func (l *Logger) Infoj(j log.JSON) {
-	if l.shouldLog(log.INFO) {
-		msg, found := j["message"]
-		if !found {
-			l.withPrefix().Infow("", l.jsonToFields(j)...)
-		}
-
-		switch m := msg.(type) {
-		case string:
-			delete(j, "message")
-			l.withPrefix().Infow(m, l.jsonToFields(j)...)
-		default:
-			l.withPrefix().Infow("", l.jsonToFields(j)...)
-		}
-	}
-}
-
-func (l *Logger) Warn(i ...interface{}) {
-	if l.shouldLog(log.WARN) {
-		l.withPrefix().Warn(i...)
-	}
-}
-
-func (l *Logger) Warnf(format string, args ...interface{}) {
-	if l.shouldLog(log.WARN) {
-		l.withPrefix().Warnf(format, args...)
-	}
-}
-
-func (l *Logger) Warnj(j log.JSON) {
-	if l.shouldLog(log.WARN) {
-		msg, found := j["message"]
-		if !found {
-			l.withPrefix().Warnw("", l.jsonToFields(j)...)
-		}
-
-		switch m := msg.(type) {
-		case string:
-			delete(j, "message")
-			l.withPrefix().Warnw(m, l.jsonToFields(j)...)
-		default:
-			l.withPrefix().Warnw("", l.jsonToFields(j)...)
-		}
-	}
-}
-
-func (l *Logger) Error(i ...interface{}) {
-	if l.shouldLog(log.ERROR) {
-		l.withPrefix().Error(i...)
-	}
-}
-
-func (l *Logger) Errorf(format string, args ...interface{}) {
-	if l.shouldLog(log.ERROR) {
-		l.withPrefix().Errorf(format, args...)
-	}
-}
-
-func (l *Logger) Errorj(j log.JSON) {
-	if l.shouldLog(log.ERROR) {
-		msg, found := j["message"]
-		if !found {
-			l.withPrefix().Errorw("", l.jsonToFields(j)...)
-		}
-
-		switch m := msg.(type) {
-		case string:
-			delete(j, "message")
-			l.withPrefix().Errorw(m, l.jsonToFields(j)...)
-		default:
-			l.withPrefix().Errorw("", l.jsonToFields(j)...)
-		}
-	}
-}
-
-func (l *Logger) Fatal(i ...interface{}) {
-	l.withPrefix().Fatal(i...)
-}
-
-func (l *Logger) Fatalf(format string, args ...interface{}) {
-	l.withPrefix().Fatalf(format, args...)
-}
-
-func (l *Logger) Fatalj(j log.JSON) {
+// logJSON handles the common logic for logging JSON with message extraction
+func (l *Logger) logJSON(j log.JSON, logFunc func(string, ...any)) {
 	msg, found := j["message"]
 	if !found {
-		l.withPrefix().Fatalw("", l.jsonToFields(j)...)
+		logFunc("", l.jsonToFields(j)...)
+		return
 	}
 
 	switch m := msg.(type) {
 	case string:
 		delete(j, "message")
-		l.withPrefix().Fatalw(m, l.jsonToFields(j)...)
+		logFunc(m, l.jsonToFields(j)...)
 	default:
-		l.withPrefix().Fatalw("", l.jsonToFields(j)...)
+		logFunc("", l.jsonToFields(j)...)
 	}
-}
-
-func (l *Logger) Panic(i ...interface{}) {
-	l.withPrefix().Panic(i...)
-}
-
-func (l *Logger) Panicf(format string, args ...interface{}) {
-	l.withPrefix().Panicf(format, args...)
-}
-
-func (l *Logger) Panicj(j log.JSON) {
-	msg, found := j["message"]
-	if !found {
-		l.withPrefix().Panicw("", l.jsonToFields(j)...)
-	}
-
-	switch m := msg.(type) {
-	case string:
-		delete(j, "message")
-		l.withPrefix().Panicw(m, l.jsonToFields(j)...)
-	default:
-		l.withPrefix().Panicw("", l.jsonToFields(j)...)
-	}
-}
-
-func (l *Logger) Sync() {
-	l.logger.Sync()
-	l.sugar.Sync()
-}
-
-func (l *Logger) Write(p []byte) (n int, err error) {
-	l.withPrefix().Error(string(p))
-	return len(p), nil
 }
