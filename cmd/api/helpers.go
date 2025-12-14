@@ -19,27 +19,24 @@ func (app *application) GetParamId(ctx echo.Context) (int, error) {
 	return int(id), nil
 }
 
-func (app *application) SortColumn(value string) *string {
+func (app *application) SortColumn(value string) string {
 	column := strings.TrimPrefix(value, "-")
-	return &column
+	return column
 }
 
-func (app *application) SortDirection(value string) *string {
+func (app *application) SortDirection(value string) string {
 	var direction string
+
 	if strings.HasPrefix(value, "-") {
 		direction = "DESC"
 	} else {
-
 		direction = "ASC"
 	}
-	return &direction
+	return direction
 
 }
 
-func (app *application) PageOffset(page, pageSize int) *int {
+func (app *application) PageOffset(page, pageSize int) int {
 	offset := (page - 1) * pageSize
-	return &offset
+	return offset
 }
-
-func (app *application) IntPtr(i int) *int          { return &i }
-func (app *application) StringPtr(i string) *string { return &i }
