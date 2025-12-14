@@ -2,13 +2,13 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/ucok-man/tcsa/cmd/api/dto"
 	"github.com/ucok-man/tcsa/internal/data"
+	"github.com/ucok-man/tcsa/internal/utility"
 )
 
 func (app *application) createTransactionHandler(ctx echo.Context) error {
@@ -36,7 +36,9 @@ func (app *application) createTransactionHandler(ctx echo.Context) error {
 		return app.ErrInternalServer(err, "failed insert transaction", ctx.Request())
 	}
 
-	return ctx.JSON(http.StatusCreated, envelope{"transaction": transaction})
+	return ctx.JSON(http.StatusCreated, envelope{
+		"data": transaction,
+	})
 }
 
 func (app *application) getByIdTransactionHandler(ctx echo.Context) error {
@@ -60,7 +62,9 @@ func (app *application) getByIdTransactionHandler(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, envelope{"transaction": transaction})
+	return ctx.JSON(http.StatusOK, envelope{
+		"data": transaction,
+	})
 }
 
 func (app *application) removeByIdTransactionHandler(ctx echo.Context) error {
@@ -90,7 +94,7 @@ func (app *application) removeByIdTransactionHandler(ctx echo.Context) error {
 	}
 
 	return ctx.JSON(http.StatusOK, envelope{
-		"message": fmt.Sprintf("transaction record with id %v succesfully dedelte", transaction.ID),
+		"data": transaction,
 	})
 }
 
@@ -133,16 +137,18 @@ func (app *application) updateByIdTransactionHandler(ctx echo.Context) error {
 		}
 	}
 
-	return ctx.JSON(http.StatusOK, envelope{"transaction": transaction})
+	return ctx.JSON(http.StatusOK, envelope{
+		"data": transaction,
+	})
 }
 
 func (app *application) getAllTransactionHandler(ctx echo.Context) error {
 	var dto dto.TransactionGetAllDTO
 
 	// Set Default Value
-	dto.Pagination.Page = app.IntPtr(1)
-	dto.Pagination.PageSize = app.IntPtr(10)
-	dto.Sort.RawValue = app.StringPtr("id")
+	dto.Pagination.Page = utility.SetPtrValue(1)
+	dto.Pagination.PageSize = utility.SetPtrValue(10)
+	dto.Sort.Value = utility.SetPtrValue("id")
 
 	if err := ctx.Bind(&dto); err != nil {
 		return app.ErrBadRequest(err.Error())
@@ -152,19 +158,21 @@ func (app *application) getAllTransactionHandler(ctx echo.Context) error {
 		return app.ErrFailedValidation(err)
 	}
 
-	dto.Pagination.Limit = dto.Pagination.PageSize
-	dto.Pagination.Offset = app.PageOffset(*dto.Pagination.Page, *dto.Pagination.PageSize)
-	dto.Sort.Direction = app.SortDirection(*dto.Sort.RawValue)
-	dto.Sort.ColumnValue = app.SortColumn(*dto.Sort.RawValue)
-
-	transactions, metadata, err := app.models.Transactions.GetAll(dto)
+	transactions, metadata, err := app.models.Transactions.GetAll(data.TransactionGetAllParam{
+		Page:          *dto.Pagination.Page,
+		PageSize:      *dto.Pagination.PageSize,
+		PageOffset:    app.PageOffset(*dto.Pagination.Page, *dto.Pagination.PageSize),
+		SortColumn:    app.SortColumn(*dto.Sort.Value),
+		SortDirection: app.SortDirection(*dto.Sort.Value),
+		FilterStatus:  utility.DerefOrDefault(dto.Filter.Status, ""),
+		FilterUserId:  utility.DerefOrDefault(dto.Filter.UserId, 0),
+	})
 	if err != nil {
 		return app.ErrInternalServer(err, "failed get all transactions", ctx.Request())
 	}
 
-	if transactions == nil {
-		transactions = []*data.Transaction{}
-	}
-
-	return ctx.JSON(http.StatusOK, envelope{"transactions": transactions, "metadata": metadata})
+	return ctx.JSON(http.StatusOK, envelope{
+		"data":     transactions,
+		"metadata": metadata,
+	})
 }
