@@ -38,7 +38,7 @@ test:
 	@echo 'runing test...'
 	@go test -v -cover ./...
 
-## test: run all test with gotestdox
+## test/doc: run all test with gotestdox
 .PHONY: test/doc
 test/doc:
 	@echo 'runing test...'
@@ -49,6 +49,27 @@ test/doc:
 swag:
 	@echo 'generating swagger docs...'
 	@swag init -g cmd/api/main.go  -o ./cmd/api/docs
+
+# ------------------------------------------------------------------ #
+#                          Compose Script                            #
+# ------------------------------------------------------------------ #
+
+## compose/up: run api and database using docker compose
+.PHONY: compose/up
+compose/up:
+	@read -p "Do you want to run migration script first? [y/N] " ans; \
+	if echo "$$ans" | grep -iq '^y$$'; then \
+		$(MAKE) db/up; \
+		$(MAKE) db/wait; \
+		$(MAKE) migrate/up; \
+	fi; \
+	docker compose up
+	
+## compose/clear: clear api and database container artifact
+.PHONY: compose/clear
+compose/clear:
+	@echo 'Cleaning up artifact...'
+	@docker compose down -v
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -83,19 +104,30 @@ audit:
 .PHONY: db/up
 db/up:
 	@echo 'Starting database...'
-	@docker compose up -d
+	@docker compose up -d tcsa_postgres
 
 ## db/down: remove database container instance
 .PHONY: db/down
 db/down:
 	@echo 'Removing database...'
-	@docker compose down
+	@docker compose down tcsa_postgres
 
-## db/remove: remove database container instance include volume
-.PHONY: db/clean
-db/clean:
+## db/clear: clear database container instance include volume
+.PHONY: db/clear
+db/clear:
 	@echo 'Cleaning up database...'
-	@docker compose down -v
+	@docker compose down -v tcsa_postgres
+
+## db/wait: wait until database is ready
+.PHONY: db/wait
+db/wait:
+	@echo "Waiting for database to be ready..."
+	@until docker compose exec -T tcsa_postgres pg_isready \
+		-U ${POSTGRES_USER} \
+		-d ${POSTGRES_DB} >/dev/null 2>&1; do \
+		sleep 2; \
+	done
+	@echo "Database is ready."
 
 # ------------------------------------------------------------------ #
 #                          Migration Script                          #

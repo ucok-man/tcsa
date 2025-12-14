@@ -1,4 +1,21 @@
 services:
+  tcsa_api:
+    build: .
+    container_name: tcsa_api
+    ports:
+      - "4000:4000"
+    environment:
+      TCSA_PORT: 4000
+      TCSA_ENV: development
+      TCSA_DB_DSN: "postgres://tcsa:pa55word@tcsa_postgres:5432/tcsa?sslmode=disable"
+      TCSA_DB_MAX_OPEN_CONN: 25
+      TCSA_DB_MAX_IDLE_CONN: 15
+      TCSA_DB_MAX_IDLE_TIME: 15m
+      TCSA_LOG_LEVEL: info
+    depends_on:
+      - tcsa_postgres
+    restart: unless-stopped
+
   tcsa_postgres:
     image: postgres:17
     container_name: tcsa_postgres
@@ -10,6 +27,11 @@ services:
       - "5433:5432"
     volumes:
       - tcsa_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tcsa -d tcsa"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
     restart: unless-stopped
 
 volumes:
